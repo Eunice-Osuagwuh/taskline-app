@@ -14,6 +14,17 @@ The dev server binds to `0.0.0.0` and uses:
 - otherwise `VITE_PORT`
 - otherwise `5173`
 
+## Port Guide
+
+- Local development uses `npm run dev`, which typically runs on `5173`.
+- Production/server mode uses `npm start`, which reads `PORT`.
+- On the VM workflow, the app is forced to run on `8080`.
+
+Example VM/production command:
+```bash
+PORT=8080 npm start
+```
+
 ## Production
 
 ```bash
