@@ -25,8 +25,37 @@ export function createGame({ input, renderer, onHUDUpdate, onSessionEnd }) {
     s.score += clearBombs * 6 + collectStars * 12; s.combo = Math.min(16, s.combo + collectStars); s.comboTimer = collectStars > 0 ? 1.2 : s.comboTimer;
     return true;
   };
+  const pushPopup = (x, y, text, tone) => {
+    s.feedback.popups.push({ x, y, text, tone, ttl: 0.7, age: 0 });
+    if (s.feedback.popups.length > 8) s.feedback.popups.shift();
+  };
+  const updateFeedback = (d) => {
+    s.feedback.hitFlash = Math.max(0, s.feedback.hitFlash - d * 2.4);
+    s.feedback.pulse = Math.max(0, s.feedback.pulse - d * 2.1);
+    s.feedback.popups = s.feedback.popups
+      .map((popup) => ({ ...popup, age: popup.age + d, ttl: popup.ttl - d, y: popup.y - 26 * d }))
+      .filter((popup) => popup.ttl > 0);
+  };
   const step = (d) => {
-    const px = input.getPointerX(); if (typeof px === "number") { s.player.velocityX = 0; s.player.x = px - s.player.width / 2; } else { const a = input.getHorizontalAxis(); s.player.velocityX = a * GAME_CONFIG.playerSpeed; s.player.x += s.player.velocityX * d; }
+    const px = input.getPointerX();
+    if (typeof px === "number") {
+      s.player.targetX = px - s.player.width / 2;
+      const distance = s.player.targetX - s.player.x;
+      s.player.x += distance * Math.min(1, GAME_CONFIG.pointerFollow * d);
+      s.player.velocityX = distance / Math.max(d, 0.001);
+    } else {
+      const a = input.getHorizontalAxis();
+      if (a !== 0) {
+        s.player.velocityX += a * GAME_CONFIG.playerAcceleration * d;
+      } else if (s.player.velocityX !== 0) {
+        const drag = GAME_CONFIG.playerDrag * d;
+        if (Math.abs(s.player.velocityX) <= drag) s.player.velocityX = 0;
+        else s.player.velocityX -= Math.sign(s.player.velocityX) * drag;
+      }
+      s.player.velocityX = Math.max(-GAME_CONFIG.playerSpeed, Math.min(GAME_CONFIG.playerSpeed, s.player.velocityX));
+      s.player.x += s.player.velocityX * d;
+      s.player.targetX = s.player.x;
+    }
     s.player.x = Math.max(0, Math.min(GAME_CONFIG.width - s.player.width, s.player.x)); tickProgression(s); boss(d);
     const slow = s.effects.freezeSecondsLeft > 0 ? 0.65 : 1, bossRate = s.boss.active ? 1.35 : 1;
     s.spawn.starTimer += d * 1000 * slow; s.spawn.bombTimer += d * 1000 * slow; s.spawn.powerUpTimer += d * 1000 * slow; s.spawn.secondTimer += d;
@@ -38,6 +67,10 @@ export function createGame({ input, renderer, onHUDUpdate, onSessionEnd }) {
     const picked = h.starHits + h.goldHits; if (picked > 0) { s.combo = Math.min(16, s.combo + picked); s.comboTimer = 1.4; if (s.combo >= 9) s.effects.feverSecondsLeft = 5; const m = 1 + Math.floor(s.combo / 3) + (s.effects.feverSecondsLeft > 0 ? 1 : 0); s.score += h.starHits * 10 * m + h.goldHits * 25 * m; }
     if (h.bossHits > 0 && s.boss.active) { s.boss.hp -= h.bossHits; s.score += 55 * h.bossHits; if (s.boss.hp <= 0) { s.boss.active = false; s.boss.nextLevel += GAME_CONFIG.bossLevelStep; s.score += 140; s.effects.feverSecondsLeft = Math.max(6, s.effects.feverSecondsLeft); } }
     if (h.bombHits > 0 || s.comboTimer <= 0) s.combo = 0; if (h.powerHits > 0) s.score += 8 * h.powerHits;
+    h.pickups.forEach((pickup) => pushPopup(pickup.x, pickup.y, pickup.text, pickup.tone));
+    if (h.pickups.length > 0) s.feedback.pulse = Math.min(1, s.feedback.pulse + 0.45);
+    if (h.hits.length > 0) s.feedback.hitFlash = 1;
+    updateFeedback(d);
     if (s.level >= GAME_CONFIG.maxLevel && !s.boss.active) { s.isGameOver = true; s.result = "victory"; }
     if (s.lives <= 0) { s.isGameOver = true; s.result = "lost"; } else if (s.timeLeft <= 0) { s.isGameOver = true; s.result = "won"; }
   };

@@ -17,6 +17,7 @@ export function createInitialState() {
       width: GAME_CONFIG.playerWidth,
       height: GAME_CONFIG.playerHeight,
       velocityX: 0,
+      targetX: GAME_CONFIG.width / 2 - GAME_CONFIG.playerWidth / 2,
     },
     stars: [],
     bombs: [],
@@ -47,6 +48,11 @@ export function createInitialState() {
       bombTimer: 0,
       powerUpTimer: 0,
       secondTimer: 0,
+    },
+    feedback: {
+      popups: [],
+      hitFlash: 0,
+      pulse: 0,
     },
   };
 }

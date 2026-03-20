@@ -23,6 +23,14 @@ export function createRenderer(canvas) {
     overlayPanel: "rgba(15, 23, 42, 0.18)",
     overlayText: "#f8fafc",
     overlaySubtle: "rgba(248, 250, 252, 0.82)",
+    popup: {
+      star: "#0f6fa8",
+      gold: "#9a6612",
+      shield: "#147d63",
+      freeze: "#12639b",
+      rush: "#a05e12",
+      boss: "#6d3fe0",
+    },
   };
 
   function clear() {
@@ -152,6 +160,26 @@ export function createRenderer(canvas) {
     drawCenteredOverlay("Paused", "", 236, 84, 30, 16);
   }
 
+  function drawFeedback(state) {
+    if (state.feedback.pulse > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${0.08 * state.feedback.pulse})`;
+      ctx.fillRect(0, 0, GAME_CONFIG.width, GAME_CONFIG.height);
+    }
+    if (state.feedback.hitFlash > 0) {
+      ctx.fillStyle = `rgba(239,107,99,${0.14 * state.feedback.hitFlash})`;
+      ctx.fillRect(0, 0, GAME_CONFIG.width, GAME_CONFIG.height);
+    }
+    ctx.textAlign = "center";
+    state.feedback.popups.forEach((popup) => {
+      const alpha = Math.max(0, popup.ttl / 0.7);
+      ctx.fillStyle = `${PALETTE.popup[popup.tone] || "#334155"}${""}`;
+      ctx.globalAlpha = alpha;
+      ctx.font = "700 15px Inter, Segoe UI, sans-serif";
+      ctx.fillText(popup.text, popup.x, popup.y);
+      ctx.globalAlpha = 1;
+    });
+  }
+
   return {
     render(state) {
       clear();
@@ -173,6 +201,7 @@ export function createRenderer(canvas) {
         ctx.fillStyle = PALETTE.bossWash;
         ctx.fillRect(0, 0, GAME_CONFIG.width, GAME_CONFIG.height);
       }
+      drawFeedback(state);
 
       if (state.isGameOver) {
         drawGameOver(state);
