@@ -22,6 +22,22 @@ PORT=8080 npm start
 
 `npm start` serves the built `dist/` app and binds to `process.env.PORT` with a default of `8080`.
 
+## Docker
+
+Build the image locally:
+
+```bash
+docker build --platform linux/amd64 -t your-dockerhub-username/taskline:v1 .
+```
+
+Push it to Docker Hub:
+
+```bash
+docker push your-dockerhub-username/taskline:v1
+```
+
+The Docker image uses a multi-stage build with `node:20-bookworm-slim`. The build stage runs on the native build platform to avoid `esbuild` issues during cross-platform builds, while the final image is compatible with `linux/amd64` deployment targets such as Azure.
+
 ## App Env Variables
 
 - `APP_TITLE`: app title in server/runtime mode
