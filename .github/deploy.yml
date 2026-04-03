@@ -1,0 +1,66 @@
+name: Docker + Terraform Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::7}
+          docker build -t uniquette12/taskline:${IMAGE_TAG} .
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Push Docker image
+        run: |
+          docker push uniquette12/taskline:${GITHUB_SHA::7}
+
+  terraform:
+    name: Deploy with Terraform
+    needs: docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7.6
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.ARM_CREDENTIALS }}
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Plan
+        run: terraform plan -var="docker_image=uniquette12/taskline:${GITHUB_SHA::7}" -out=tfplan
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: terraform
+
+      - name: Print App URL
+        run: terraform output app_url
+        working-directory: terraform
