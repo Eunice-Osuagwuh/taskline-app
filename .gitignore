@@ -1,7 +1,21 @@
-node_modules
-dist
-.DS_Store
+# Terraform
+terraform.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Environment files
 .env
-.env.example
-.codex/
-.claude/
+.env.*
+
+# Node
+node_modules/
+
+# Secrets
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
