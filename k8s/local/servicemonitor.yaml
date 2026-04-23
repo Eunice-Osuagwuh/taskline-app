@@ -1,10 +1,14 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: tasklineapp-monitor
+  name: taskline-backend
+  namespace: monitoring
   labels:
     release: monitoring
 spec:
+  namespaceSelector:
+    matchNames:
+      - default
   selector:
     matchLabels:
       app: tasklineapp
@@ -12,15 +16,3 @@ spec:
     - port: http
       path: /metrics
       interval: 15s
-
-
-
-
-
-
-
-
-
-
-
-
